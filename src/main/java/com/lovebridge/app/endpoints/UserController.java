@@ -1,10 +1,15 @@
 package com.lovebridge.app.endpoints;
 
+import com.lovebridge.app.classes.Password;
 import com.lovebridge.app.classes.User;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 @RestController
@@ -12,6 +17,9 @@ import java.util.Optional;
 public class UserController {
     @Autowired
     private com.lovebridge.app.interfaces.UserRepository userRepository;
+
+    @Autowired
+    private com.lovebridge.app.interfaces.PasswordRepository passwordRepository;
 
     final public String username = "A1EC3106057E2982CECE78522BDE740C3C9F2EF6D1E8293"; // User & Pass are AES-198 encrypted strings (Corrupted)
     final public String password = "BAE60B0C316919239898AAB6F3D57DABBED6755644D3726"; // Login information for API
@@ -26,45 +34,73 @@ public class UserController {
 //        /remove  |  Removes account from both databases.  (User, Password, ID:       String)
 
     @PostMapping("/create")
-    public String createUser(@RequestHeader("Username") String u,
-                             @RequestHeader("Password") String p,
-                             @RequestBody User newUser) {
+    public ResponseEntity<Map<String, Object>> createUser(@RequestHeader("Username") String u,
+                                                          @RequestHeader("Password") String p,
+                                                          @RequestBody User newUser) {
 
         if (Unauthenticated(u, p)) {
-            return "Unauthorized, check login information";
+            Map<String, Object> response = new HashMap<>();
+
+            response.put("status", "error");
+            response.put("message", "Unauthorized, check login information");
+
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
 
         Optional<User> existingUser = Optional.ofNullable(userRepository.findByUserIgnoreCase(newUser.getUser()));
 
         if (existingUser.isPresent()) {
-            return "Duplicate username";
+            Map<String, Object> response = new HashMap<>();
+
+            response.put("status", "error");
+            response.put("message", "Duplicate username");
+
+            return ResponseEntity.status(HttpStatus.CONFLICT).body(response);
         }
 
-        List<User> similarUsers = userRepository.findAllByDiscordId(newUser.getDiscordId());
+        List<User> similarUsers = userRepository.findAllByDiscordId(newUser.getId());
         int linkedIndex = similarUsers.size() + 1;
 
         newUser.setLinked(linkedIndex);
         newUser.setId(null);
+
         userRepository.save(newUser);
 
-        return "User linked successfully!";
+        Map<String, Object> response = new HashMap<>();
+
+        response.put("status", "success");
+        response.put("message", "User linked successfully");
+
+        return ResponseEntity.ok(response);
     }
 
-    @PostMapping("/remove")
-    public String removeUser(@RequestHeader("Username") String u,
-                             @RequestHeader("Password") String p,
-                             @RequestParam String id) {
+    public ResponseEntity<Map<String, Object>> removeUser(@RequestHeader("Username") String u,
+                                                          @RequestHeader("Password") String p,
+                                                          @RequestBody String id) {
+
+        Map<String, Object> response = new HashMap<>();
 
         if (Unauthenticated(u, p)) {
-            return "Unauthorized, check login information";
+            response.put("status", "error");
+            response.put("message", "Unauthorized, check login information");
+
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
 
         User user = userRepository.findByDiscordId(id);
 
         if (user == null) {
-            return "Account not found";
+            response.put("status", "error");
+            response.put("message", "Account not found");
+
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
         }
 
-        return "Unlinked account for Discord ID: " + id;
+        userRepository.delete(user);
+
+        response.put("status", "success");
+        response.put("message", "Unlinked account for ID: " + id);
+
+        return ResponseEntity.ok(response);
     }
 }
