@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.Map;
 
 @RestController
-@RequestMapping("/accounts/command")
+@RequestMapping("/account/command")
 public class Commands {
     @Autowired
     private UserRepository userRepository;
