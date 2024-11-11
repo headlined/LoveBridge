@@ -7,6 +7,8 @@ import java.util.List;
 
 public interface UserRepository extends MongoRepository<User, String>{
     User findByUserIgnoreCase(String user);
-    User findByDiscordId(String id);
-    List<User> findAllByDiscordId(String id);
+    User findByDiscordId(String discordId);
+    User findByUserIgnoreCaseAndDiscordId(String user, String discordId);
+
+    List<User> findAllByDiscordId(String discordId);
 }
