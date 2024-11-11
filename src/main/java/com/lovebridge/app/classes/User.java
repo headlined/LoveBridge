@@ -1,17 +1,18 @@
 package com.lovebridge.app.classes;
 
 import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.index.Indexed;
 import org.springframework.data.mongodb.core.mapping.Document;
 
 @Document(collection = "accounts")
 public class User {
-    @Id
-    private String id;          // MongoDB document ID
-    private String discordId;   // Discord account ID
-    private String time;        // Time of execution
-    private String user;        // ROBLOX Username (connected account)
-    private String command;     // Command being executed
-    private String arg;         // Optional: Command arguments (e.g., "goto <player>")
+    @Id private String id;          // MongoDB document ID
+
+    @Indexed private String discordId;   // Discord account ID
+    @Indexed private String time;        // Time of execution
+    @Indexed private String user;        // ROBLOX Username (connected account)
+    @Indexed private String command;     // Command being executed
+    @Indexed private String arg;         // Optional: Command arguments (e.g., "goto <player>")
 
     private int linked;         // The number of accounts linked
     private boolean premium;    // TRUE: Gives premium benefits
