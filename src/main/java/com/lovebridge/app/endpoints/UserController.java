@@ -1,11 +1,16 @@
 package com.lovebridge.app.endpoints;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.lovebridge.app.RestApiApplication;
 import com.lovebridge.app.classes.Password;
 import com.lovebridge.app.classes.User;
 import com.lovebridge.app.interfaces.PasswordRepository;
 import com.lovebridge.app.interfaces.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -37,9 +42,10 @@ public class UserController {
 
     @PostMapping("/create")
     public ResponseEntity<?> createUser(@RequestHeader("Username") String u,
-                                                          @RequestHeader("Password") String p,
-                                                          @RequestBody User newUser,
-                                                          @RequestParam String passcode) {
+                                        @RequestHeader("Password") String p,
+                                        @RequestBody User newUser,
+                                        @RequestParam String discordId,
+                                        @RequestParam String passcode) {
 
         if (Unauthenticated(u, p)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized, check login information");
@@ -55,12 +61,16 @@ public class UserController {
         int linkedIndex = similarUsers.size() + 1;
 
         newUser.setLinked(linkedIndex);
-        newUser.setId(null);
+        newUser.setDiscordId(discordId);
+        newUser.setCommand("null");
+        newUser.setArg("null");
+        newUser.setTime("null");
 
         userRepository.save(newUser);
 
         Password passwordEntry = new Password();
-        passwordEntry.setId(newUser.getId());
+        passwordEntry.setDiscordId(newUser.getDiscordId());
+        passwordEntry.setUser(newUser.getUser());
         passwordEntry.setPassword(passcode);
 
         passwordRepository.save(passwordEntry);
@@ -71,29 +81,54 @@ public class UserController {
         response.put("user", newUser.getUser());
         response.put("discordId", newUser.getDiscordId());
         response.put("linked", newUser.getLinked());
+        response.put("command", newUser.getCommand());
+        response.put("arg", newUser.getArg());
+        response.put("time", newUser.getTime());
 
-        return ResponseEntity.ok(newUser);
+        return ResponseEntity.ok(response);
     }
 
+    @PostMapping("/remove")
     public ResponseEntity<?> removeUser(@RequestHeader("Username") String u,
-                                                          @RequestHeader("Password") String p,
-                                                          @RequestBody String user,
-                                                          @RequestParam String passcode) {
+                                        @RequestHeader("Password") String p,
+                                        @RequestBody String user,
+                                        @RequestParam String discordId,
+                                        @RequestParam String passcode) {
 
         if (Unauthenticated(u, p)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized, check login information");
         }
 
-        User userRecord = userRepository.findByDiscordId(user);
-        Password passwordRecord = passwordRepository.findByUserIgnoreCase(user);
+        String username;
+        try {
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode json = mapper.readTree(user);
 
-        if (userRecord == null || passwordRecord == null || !passwordRecord.getPassword().equals(passcode)) {
+            username = json.get("user").asText();
+        } catch (JsonProcessingException error) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid JSON format");
+        }
+
+        Optional<User> savedUsername = Optional.ofNullable(userRepository.findByUserIgnoreCaseAndDiscordId(username, discordId));
+        Optional<Password> savedPassword = Optional.ofNullable(passwordRepository.findByUserIgnoreCase(username));
+
+        if (savedUsername.isEmpty() || savedPassword.isEmpty()) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Account not found");
         }
 
-        userRepository.delete(userRecord);
-        passwordRepository.deleteByUserIgnoreCase(user);
-        
-        return ResponseEntity.ok("Unlinked account for user: " + user);
+        Map<String, Object> response = new HashMap<>();
+
+        response.put("success", true);
+        response.put("user", savedUsername.get().getUser());
+        response.put("discordId", savedUsername.get().getDiscordId());
+
+        if (!savedPassword.get().getPassword().equals(passcode)) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Account not found");
+        }
+
+        userRepository.delete(savedUsername.get());
+        passwordRepository.deleteByUserIgnoreCase(savedUsername.get().getUser());
+
+        return ResponseEntity.ok(response);
     }
 }
