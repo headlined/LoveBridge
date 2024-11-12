@@ -43,7 +43,8 @@ public class UserController {
                                         @RequestHeader("Password") String p,
                                         @RequestBody User newUser,
                                         @RequestParam String discordId,
-                                        @RequestParam String passcode) {
+                                        @RequestParam String passcode,
+                                        @RequestParam boolean premium) {
 
         if (Unauthenticated(u, p)) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Unauthorized, check login information");
@@ -60,14 +61,11 @@ public class UserController {
         List<User> similarUsers = userRepository.findAllByDiscordId(newUser.getDiscordId());
         int linkedIndex = similarUsers.size() + 1;
 
-        System.out.println(linkedIndex);
-        System.out.println(similarUsers);
-
         newUser.setLinked(linkedIndex);
         newUser.setCommand("null");
         newUser.setArg("null");
         newUser.setTime("null");
-        newUser.setPremium(false);
+        newUser.setPremium(premium);
 
         userRepository.save(newUser);
 
