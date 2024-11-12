@@ -57,6 +57,7 @@ public class UserController {
         }
 
         newUser.setDiscordId(discordId);
+        newUser.setPremium(premium);
 
         List<User> similarUsers = userRepository.findAllByDiscordId(newUser.getDiscordId());
         int linkedIndex = similarUsers.size() + 1;
@@ -65,7 +66,6 @@ public class UserController {
         newUser.setCommand("null");
         newUser.setArg("null");
         newUser.setTime("null");
-        newUser.setPremium(premium);
 
         userRepository.save(newUser);
 
