@@ -55,6 +55,8 @@ public class UserController {
             return ResponseEntity.status(HttpStatus.CONFLICT).body("Duplicate username");
         }
 
+        newUser.setDiscordId(discordId);
+
         List<User> similarUsers = userRepository.findAllByDiscordId(newUser.getDiscordId());
         int linkedIndex = similarUsers.size() + 1;
 
@@ -62,7 +64,6 @@ public class UserController {
         System.out.println(similarUsers);
 
         newUser.setLinked(linkedIndex);
-        newUser.setDiscordId(discordId);
         newUser.setCommand("null");
         newUser.setArg("null");
         newUser.setTime("null");
