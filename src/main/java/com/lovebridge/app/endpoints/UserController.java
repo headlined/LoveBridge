@@ -3,14 +3,12 @@ package com.lovebridge.app.endpoints;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.lovebridge.app.RestApiApplication;
 import com.lovebridge.app.classes.Password;
 import com.lovebridge.app.classes.User;
 import com.lovebridge.app.interfaces.PasswordRepository;
 import com.lovebridge.app.interfaces.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -60,11 +58,15 @@ public class UserController {
         List<User> similarUsers = userRepository.findAllByDiscordId(newUser.getDiscordId());
         int linkedIndex = similarUsers.size() + 1;
 
+        System.out.println(linkedIndex);
+        System.out.println(similarUsers);
+
         newUser.setLinked(linkedIndex);
         newUser.setDiscordId(discordId);
         newUser.setCommand("null");
         newUser.setArg("null");
         newUser.setTime("null");
+        newUser.setPremium(false);
 
         userRepository.save(newUser);
 
@@ -84,6 +86,7 @@ public class UserController {
         response.put("command", newUser.getCommand());
         response.put("arg", newUser.getArg());
         response.put("time", newUser.getTime());
+        response.put("premium", newUser.isPremium());
 
         return ResponseEntity.ok(response);
     }
