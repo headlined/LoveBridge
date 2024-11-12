@@ -58,8 +58,11 @@ public class UserController {
         }
 
         List<User> similarUsers = userRepository.findAllByDiscordId(newUser.getId());
+        System.out.println(newUser.getId());
+        
         int linkedIndex = similarUsers.size() + 1;
-
+        System.out.println(linkedIndex);
+        
         newUser.setLinked(linkedIndex);
         newUser.setDiscordId(discordId);
         newUser.setCommand("null");
