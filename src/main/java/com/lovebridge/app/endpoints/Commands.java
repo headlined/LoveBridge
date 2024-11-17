@@ -7,6 +7,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -40,19 +41,24 @@ public class Commands {
         }
 
         try {
-            User user = userRepository.findByDiscordId(id);
+            List<User> users = userRepository.findAllByDiscordId(id);
 
-            if (user == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Account not found");
+            if (users == null || users.isEmpty()) {
+                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Account(s) not found");
             }
 
-            user.setTime(String.valueOf(System.currentTimeMillis() / 1000));
-            user.setCommand(command);
-            user.setArg(argument);
+            int editedAmount = 0;
 
-            userRepository.save(user);
+            for (User user : users) {
+                user.setTime(String.valueOf(System.currentTimeMillis() / 1000));
+                user.setCommand(command);
+                user.setArg(argument);
 
-            return ResponseEntity.ok("Command successful");
+                userRepository.save(user);
+                editedAmount++;
+            }
+
+            return ResponseEntity.ok(String.valueOf(editedAmount));
         } catch (Exception error) {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Internal server error: " + error);
         }
